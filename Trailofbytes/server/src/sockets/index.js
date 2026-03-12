@@ -52,6 +52,10 @@ export const initSockets = (httpServer, corsOrigin) => {
 };
 
 export const emitSessionUpdate = (io, status, session = null) => {
+  if (!io) {
+    console.error("[Socket] emitSessionUpdate called but io is not initialized!");
+    return;
+  }
   if (status === "running" && session) {
     // Ensure dates are properly serialized as ISO strings
     const sessionData = {
@@ -60,8 +64,10 @@ export const emitSessionUpdate = (io, status, session = null) => {
       endsAt: session.endsAt ? new Date(session.endsAt).toISOString() : null,
       config: session.config
     };
+    console.log(`[Socket] Emitting ${SOCKET_EVENTS.SESSION_STARTED} to all clients`, { sessionId: session._id, endsAt: sessionData.endsAt });
     io.emit(SOCKET_EVENTS.SESSION_STARTED, sessionData);
   } else {
+    console.log(`[Socket] Emitting ${SOCKET_EVENTS.SESSION_STOPPED} to all clients`);
     io.emit(SOCKET_EVENTS.SESSION_STOPPED);
   }
 };

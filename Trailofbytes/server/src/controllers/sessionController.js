@@ -52,9 +52,11 @@ export const startSession = async (req, res) => {
     }
   );
 
+  console.log(`[Session] startSession called. Session updated to 'running'. ID: ${session._id}`);
   await logAction(req.admin._id, "startSession", { sessionId: session._id });
   invalidateSessionCache();
   emitSessionUpdate(ioRef, SESSION_STATUS.RUNNING, session);
+  console.log(`[Session] Socket event emitted for SESSION_STARTED`);
   res.json({ success: true, session });
 };
 
