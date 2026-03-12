@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { initSockets } from "./sockets/index.js";
+import { initRedis } from "./config/redis.js";
 import { attachSocket as attachSessionSocket } from "./controllers/sessionController.js";
 import { attachTeamSocket } from "./controllers/teamController.js";
 
@@ -15,6 +16,8 @@ const server = http.createServer(app);
 
 const start = async () => {
   await connectDB();
+  await initRedis();
+  
   const io = initSockets(server, process.env.CLIENT_URL);
   attachSessionSocket(io);
   attachTeamSocket(io);
