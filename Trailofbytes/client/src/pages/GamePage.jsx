@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Grid from "../components/Grid.jsx";
 import QuestionPanel from "../components/QuestionPanel.jsx";
@@ -16,7 +16,7 @@ import { SOCKET_EVENTS } from "../utils/constants.js";
 const GamePage = () => {
   const { team, token, login } = useAuth();
   const navigate = useNavigate();
-  const socketRef = useSocket(token);
+  const socket = useSocket(token);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [leaderboard, setLeaderboard] = useState([]);
@@ -106,7 +106,6 @@ const GamePage = () => {
 
   // Socket event handlers
   useEffect(() => {
-    const socket = socketRef.current;
     if (!socket) return;
 
     const handleSessionStopped = () => {
@@ -164,7 +163,7 @@ const GamePage = () => {
       socket.off(SOCKET_EVENTS.SESSION_STARTED, handleSessionStarted);
       socket.off(SOCKET_EVENTS.MESSAGE_BOX, handleMessageBox);
     };
-  }, [socketRef, team, navigate]);
+  }, [socket, team, navigate]);
 
   // Build grid cells with proper state
   const gridCells = useMemo(() => {
@@ -205,7 +204,7 @@ const GamePage = () => {
     });
   }, [clickedCells, revealedCells, teamState]);
 
-  const handleAnswerSubmit = async (questionId, answer) => {
+  const handleAnswerSubmit = useCallback(async (questionId, answer) => {
     if (!answer || !answer.trim()) {
       setMessage({ text: "Please enter an answer", type: "warning" });
       return;
@@ -243,9 +242,9 @@ const GamePage = () => {
         type: "error"
       });
     }
-  };
+  }, [team]);
 
-  const handleCellClick = async (index) => {
+  const handleCellClick = useCallback(async (index) => {
     if (clickedCells.has(index)) {
       return;
     }
@@ -293,7 +292,7 @@ const GamePage = () => {
       // Revert attempts
       setTeamState(prev => prev ? { ...prev, attemptsLeft: (prev.attemptsLeft || 0) + 1 } : prev);
     }
-  };
+  }, [team, clickedCells]);
 
   const currentTeam = teamState || team;
   const attemptsLeft = currentTeam?.attemptsLeft || 0;

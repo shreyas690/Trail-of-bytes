@@ -4,10 +4,10 @@
 
 All requested features have been successfully implemented:
 
-1. ✅ **Level 1 Multi-Team Gameplay** - Multiple teams can play simultaneously, first to complete locks Level 1
-2. ✅ **Level 2 Independence** - Level 2 operates without admin control
-3. ✅ **Cumulative Scoring** - Scores persist across levels (Level 1 + Level 2 = Total Score)
-4. ✅ **Backward Compatibility** - All existing features preserved
+1. ✅ **Independent Level 1 Completion** - Multiple teams play simultaneously; each team completes Level 1 based on their own objectives or attempts.
+2. ✅ **Level 2 Independence** - Level 2 operates without admin control.
+3. ✅ **Cumulative Scoring** - Scores persist across levels (Level 1 + Level 2 = Total Score).
+4. ✅ **Redis Integration** - Real-time leaderboard and submission rate limiting.
 
 ---
 
@@ -31,7 +31,7 @@ npm run dev
 
 ## 🎮 How to Test the New Features
 
-### Test 1: Multi-Team Level 1 Lockout
+### Test 1: Independent Level 1 Completion
 
 1. **Create Multiple Teams:**
    - Open multiple browser windows/tabs
@@ -42,15 +42,15 @@ npm run dev
    - Start a new session
 
 3. **Play Level 1:**
-   - Have all teams join the game
-   - Teams answer questions and find treasures
-   - First team to find all treasures completes Level 1
+   - Have all teams join the game.
+   - Teams answer questions and find treasures independently.
+   - A team completes Level 1 when all treasures are found OR attempts are exhausted.
 
-4. **Verify Lockout:**
-   - ✅ Other teams should see a yellow banner: "🏆 Level 1 completed by [Team Name]!"
-   - ✅ Grid becomes disabled for other teams
-   - ✅ Teams are redirected to Level 2 after 3 seconds
-   - ✅ Admin dashboard shows completion info
+4. **Verify Independent Progress:**
+   - ✅ When Team A completes Level 1, they are redirected to Level 2.
+   - ✅ Team B can CONTINUE playing Level 1 normally.
+   - ✅ No global lockout banner appears; progress is personal for each team.
+   - ✅ Admin dashboard shows "Level 1 Completed" status per team.
 
 ### Test 2: Cumulative Scoring
 
@@ -111,14 +111,13 @@ This will calculate the `totalScore` for all existing teams.
 ## 🔍 Key Changes Summary
 
 ### Backend
-- **GameSession Model:** Added Level 1 completion tracking fields
-- **Team Model:** Added `totalScore`, `level1CompletedAt`, `level1Rank`
-- **Game Service:** Added Level 1 lockout logic and completion detection
-- **Socket Events:** Added `level1:locked` event for real-time notifications
-- **API Endpoints:** Added `/admin/session/level1-status`
+- **Team Model:** Added `completedLevel1`, `level1AttemptsUsed`, `totalScore`, `level1CompletedAt`.
+- **GameSession Model:** Removed global lockout fields.
+- **Game Service:** Implemented independent completion logic and Redis rate limiting.
+- **Leaderboard Service:** Added Redis Sorted Set support with MongoDB fallback.
 
 ### Frontend
-- **GamePage:** Added Level 1 lockout UI and socket listener
+- **GamePage:** Removed global lockout UI; added independent completion state handling.
 - **Level2Page:** Added cumulative score display
 - **AdminDashboardPage:** Added Level 1 status and cumulative scores
 

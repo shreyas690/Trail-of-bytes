@@ -8,12 +8,29 @@ import { SCORE_MAP } from "../utils/constants.js";
 import { getRedisClient } from "../config/redis.js";
 import { updateLeaderboardScore } from "./leaderboardService.js";
 
+let activeSessionCache = null;
+let activeSessionCacheTime = 0;
+
 export const findActiveSession = async () => {
+  const now = Date.now();
+  if (activeSessionCache && now - activeSessionCacheTime < 5000) {
+    return activeSessionCache;
+  }
   const session = await GameSession.findOne({ status: "running" }).sort({
     createdAt: -1
-  });
+  }).lean(); // Use lean() for faster read access
+  activeSessionCache = session;
+  activeSessionCacheTime = now;
   return session;
 };
+
+// Clear cache when session explicitly manipulated
+export const invalidateSessionCache = () => {
+  activeSessionCache = null;
+  activeSessionCacheTime = 0;
+};
+
+const questionCache = new Map();
 
 export const submitAnswer = async ({ teamId, questionId, answer }) => {
   const session = await findActiveSession();
@@ -21,9 +38,14 @@ export const submitAnswer = async ({ teamId, questionId, answer }) => {
     throw createError(400, "No active session");
   }
 
-  const question = await Question.findById(questionId);
+  // Cache questions since they don't change
+  let question = questionCache.get(questionId.toString());
   if (!question) {
-    throw createError(404, "Question not found");
+    question = await Question.findById(questionId).lean();
+    if (!question) {
+      throw createError(404, "Question not found");
+    }
+    questionCache.set(questionId.toString(), question);
   }
 
   const redis = getRedisClient();
@@ -102,7 +124,14 @@ export const clickCell = async ({ teamId, cellIndex }) => {
   let treasure = null;
 
   if (team.pendingRevealCell === cellIndex) {
-    const question = await Question.findOne({ treasureCellIndex: cellIndex });
+    // Attempt to find question from cache first by searching values
+    let question = Array.from(questionCache.values()).find(q => q.treasureCellIndex === cellIndex);
+    if (!question) {
+      question = await Question.findOne({ treasureCellIndex: cellIndex }).lean();
+      if (question) {
+        questionCache.set(question._id.toString(), question);
+      }
+    }
     const difficulty = question?.difficulty || "common";
     delta = SCORE_MAP[difficulty] ?? SCORE_MAP.common;
     treasure = {
@@ -117,6 +146,7 @@ export const clickCell = async ({ teamId, cellIndex }) => {
 
   updateQuery.$inc.points = (updateQuery.$inc.points || 0) + delta;
   updateQuery.$inc.score = (updateQuery.$inc.score || 0) + delta;
+  updateQuery.$inc.totalScore = (updateQuery.$inc.totalScore || 0) + delta;
 
   let updatedTeam = await Team.findOneAndUpdate(
     {

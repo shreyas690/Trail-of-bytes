@@ -1,6 +1,7 @@
+import React from "react";
 import PropTypes from "prop-types";
 
-const Cell = ({ index, state, label, disabled, onClick }) => {
+const Cell = React.memo(({ index, state, label, disabled, onClick }) => {
   const base = "aspect-square rounded-lg border-2 text-sm font-bold transition-all duration-200 transform flex items-center justify-center relative";
 
   let colors = "bg-card border-primary/30 text-foreground";
@@ -43,7 +44,7 @@ const Cell = ({ index, state, label, disabled, onClick }) => {
       <span className="text-lg font-bold">{state === "hidden" ? "" : (label || "")}</span>
     </button>
   );
-};
+});
 
 Cell.propTypes = {
   index: PropTypes.number.isRequired,
@@ -52,5 +53,7 @@ Cell.propTypes = {
   disabled: PropTypes.bool,
   onClick: PropTypes.func.isRequired
 };
+
+Cell.displayName = "Cell";
 
 export default Cell;

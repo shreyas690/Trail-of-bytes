@@ -3,6 +3,7 @@ import Team from "../models/Team.js";
 import { SESSION_STATUS } from "../utils/constants.js";
 import ActionLog from "../models/ActionLog.js";
 import { emitSessionUpdate } from "../sockets/index.js";
+import { invalidateSessionCache } from "../services/gameService.js";
 
 let ioRef;
 
@@ -52,6 +53,7 @@ export const startSession = async (req, res) => {
   );
 
   await logAction(req.admin._id, "startSession", { sessionId: session._id });
+  invalidateSessionCache();
   emitSessionUpdate(ioRef, SESSION_STATUS.RUNNING, session);
   res.json({ success: true, session });
 };
@@ -63,6 +65,7 @@ export const stopSession = async (req, res) => {
     { new: true }
   );
   await logAction(req.admin._id, "stopSession", { sessionId: session?._id });
+  invalidateSessionCache();
   emitSessionUpdate(ioRef, SESSION_STATUS.STOPPED);
   res.json({ success: true, session });
 };
@@ -97,6 +100,7 @@ export const resetSession = async (req, res) => {
     { new: true }
   );
   await logAction(req.admin._id, "resetSession", { sessionId: session?._id });
+  invalidateSessionCache();
   emitSessionUpdate(ioRef, SESSION_STATUS.WAITING);
   res.json({ success: true, session });
 };

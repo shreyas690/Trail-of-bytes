@@ -1,6 +1,9 @@
 import Team from "../models/Team.js";
 import { getRedisClient } from "../config/redis.js";
 
+// In-memory cache for team names to prevent DB hits on every leaderboard poll
+const teamNameCache = new Map();
+
 export const getLeaderboard = async () => {
   const redis = getRedisClient();
 
@@ -9,18 +12,24 @@ export const getLeaderboard = async () => {
       // Try Redis first
       const rawData = await redis.zRevRangeWithScores("leaderboard", 0, 49);
       if (rawData && rawData.length > 0) {
-        // Fetch team names from Mongo for these IDs
         const teamIds = rawData.map(item => item.value);
-        const teams = await Team.find({ _id: { $in: teamIds } }).select("name points score _id totalScore level2Points").lean();
 
-        // Map back to ordered array
-        const teamMap = {};
-        teams.forEach(t => teamMap[t._id.toString()] = t);
+        // Figure out which team names we still need to fetch
+        const missingIds = teamIds.filter(id => !teamNameCache.has(id));
 
+        if (missingIds.length > 0) {
+          const fetched = await Team.find({ _id: { $in: missingIds } }).select("name").lean();
+          fetched.forEach(t => teamNameCache.set(t._id.toString(), t.name));
+        }
+
+        // Map back to ordered array without hitting DB again
         const sortedTeams = rawData.map(item => {
-          const team = teamMap[item.value] || { _id: item.value, name: "Unknown" };
+          const name = teamNameCache.get(item.value) || "Unknown";
           return {
-            ...team,
+            _id: item.value,
+            name,
+            points: item.score,     // Map item.score to points/totalScore for frontend
+            score: item.score,
             totalScore: item.score
           };
         }).filter(t => t.name !== "Unknown");

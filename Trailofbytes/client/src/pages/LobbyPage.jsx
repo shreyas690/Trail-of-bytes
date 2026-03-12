@@ -11,7 +11,7 @@ import { SOCKET_EVENTS } from "../utils/constants.js";
 const LobbyPage = () => {
   const { token, team } = useAuth();
   const navigate = useNavigate();
-  const socketRef = useSocket(token);
+  const socket = useSocket(token);
   const [teams, setTeams] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [modal, setModal] = useState(false);
@@ -22,7 +22,6 @@ const LobbyPage = () => {
       return;
     }
 
-    const socket = socketRef.current;
     if (!socket) return;
 
     socket.emit(SOCKET_EVENTS.JOIN_LOBBY);
@@ -42,7 +41,7 @@ const LobbyPage = () => {
       socket.off(SOCKET_EVENTS.LOBBY_UPDATE, handleLobbyUpdate);
       socket.off(SOCKET_EVENTS.SESSION_STARTED, handleSessionStarted);
     };
-  }, [socketRef, token, navigate]);
+  }, [socket, token, navigate]);
 
   useEffect(() => {
     const fetch = async () => {
