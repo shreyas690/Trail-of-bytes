@@ -44,8 +44,7 @@ export const clickGrid = async (req, res, next) => {
       cellIndex: req.body.cellIndex
     });
     emitTeamUpdate(ioRef, result.team);
-    const leaderboard = await getLeaderboard();
-    emitLeaderboard(ioRef, leaderboard);
+    // Removed emitLeaderboard to prevent mass socket spam on every click since frontend polls it
     emitMessage(ioRef, result.team._id, {
       text: result.message,
       type: result.delta >= 0 ? "success" : "error"

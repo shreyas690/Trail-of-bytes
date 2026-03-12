@@ -73,18 +73,6 @@ const GamePage = () => {
       }
     };
 
-    const checkSessionStatus = async () => {
-      try {
-        const { data } = await http.get("/leaderboard/session-status");
-        if (data?.session?.status === "running" && data.session?.endsAt) {
-          const endTime = new Date(data.session.endsAt).getTime();
-          setSessionEndTime(endTime);
-        }
-      } catch (err) {
-        console.error("Failed to check session status:", err);
-      }
-    };
-
     fetchQuestions();
     checkSessionStatus();
   }, [token, team]);
@@ -126,10 +114,6 @@ const GamePage = () => {
       setRevealedCells(newRevealed);
     };
 
-    const handleLeaderboardUpdate = (data) => {
-      setLeaderboard(data || []);
-    };
-
     const handleSessionStarted = (sessionData) => {
       if (sessionData?.endsAt) {
         const endTime = sessionData.endsAt instanceof Date
@@ -150,7 +134,6 @@ const GamePage = () => {
 
     socket.on(SOCKET_EVENTS.SESSION_STOPPED, handleSessionStopped);
     socket.on(SOCKET_EVENTS.TEAM_UPDATE, handleTeamUpdate);
-    socket.on(SOCKET_EVENTS.LEADERBOARD_UPDATE, handleLeaderboardUpdate);
     socket.on(SOCKET_EVENTS.SESSION_STARTED, handleSessionStarted);
     socket.on(SOCKET_EVENTS.MESSAGE_BOX, handleMessageBox);
 
@@ -159,7 +142,6 @@ const GamePage = () => {
     return () => {
       socket.off(SOCKET_EVENTS.SESSION_STOPPED, handleSessionStopped);
       socket.off(SOCKET_EVENTS.TEAM_UPDATE, handleTeamUpdate);
-      socket.off(SOCKET_EVENTS.LEADERBOARD_UPDATE, handleLeaderboardUpdate);
       socket.off(SOCKET_EVENTS.SESSION_STARTED, handleSessionStarted);
       socket.off(SOCKET_EVENTS.MESSAGE_BOX, handleMessageBox);
     };
